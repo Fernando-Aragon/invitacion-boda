@@ -2,14 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
-  <title>Invitación de Boda</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover">
+  <title>Invitación de Boda - Cecy & Felipe</title>
   <style>
     :root {
-      --olive-body: #6B8E23;
-      --olive-flap: #556B2F;
-      --olive-dark: #3E4F22;
-      --bg-color: #F4F5F0;
+      --olive-body: #617d26;
+      --olive-flap: #4e641e;
+      --olive-dark: #374615;
+      --gold-seal: #d4af37;
+      --gold-dark: #9e7d1b;
     }
 
     * {
@@ -19,7 +20,7 @@
     }
 
     body {
-      background-color: var(--bg-color);
+      background-color: #0d0a08;
       font-family: 'Playfair Display', Georgia, serif;
       height: 100vh;
       height: 100dvh;
@@ -29,17 +30,85 @@
       align-items: center;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      perspective: 1200px;
     }
 
     /* =========================================
-       1. ESCENARIO DEL SOBRE (3D)
+       1. FONDO FOTOGRÁFICO CON ZOOM CINEMÁTICO
        ========================================= */
+    .bg-cinematic {
+      position: fixed;
+      inset: -5%;
+      width: 110%;
+      height: 110%;
+      background: url('fondo.jpg') center center / cover no-repeat;
+      filter: brightness(0.92) contrast(1.05);
+      z-index: 1;
+      transform: scale(1.12);
+      animation: cameraGlide 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .bg-vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(10,5,2,0.45) 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @keyframes cameraGlide {
+      0% { transform: scale(1.15) translateY(-20px); filter: brightness(0.8) blur(3px); }
+      50% { filter: brightness(0.92) blur(0px); }
+      100% { transform: scale(1) translateY(0); filter: brightness(0.92) blur(0px); }
+    }
+
+    /* =========================================
+       2. CONTENEDOR 3D DEL SOBRE
+       ========================================= */
+    .envelope-stage {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+      animation: envelopeApproach 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: transform 0.3s ease;
+    }
+
+    /* Ajuste responsivo para celulares Android con pantalla más angosta (<= 360px) */
+    @media (max-width: 360px) {
+      .envelope-stage {
+        transform: scale(0.86);
+      }
+    }
+
+    @keyframes envelopeApproach {
+      0% { transform: translateZ(-250px) translateY(40px) rotateX(15deg); opacity: 0; }
+      100% { transform: translateZ(0) translateY(0) rotateX(0deg); opacity: 1; }
+    }
+
     .scene {
       position: relative;
-      width: 320px;
-      height: 220px;
-      perspective: 1000px;
-      z-index: 10;
+      width: 340px;
+      height: 230px;
+      transform-style: preserve-3d;
+    }
+
+    /* Sombra proyectada en la mesa */
+    .scene::after {
+      content: '';
+      position: absolute;
+      bottom: -32px;
+      left: 6%;
+      width: 88%;
+      height: 40px;
+      background: radial-gradient(ellipse at center, rgba(12, 7, 3, 0.75) 0%, rgba(12, 7, 3, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: -1;
+      transition: transform 0.4s ease, opacity 0.4s ease;
     }
 
     .envelope {
@@ -48,27 +117,30 @@
       position: relative;
       cursor: pointer;
       transform-style: preserve-3d;
-      animation: heartbeat 2.6s infinite ease-in-out;
-      transition: transform 0.4s ease;
+      transform: rotateX(8deg) rotateZ(-1deg);
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1);
     }
 
-    @keyframes heartbeat {
-      0%, 100% { transform: scale(1); }
-      14% { transform: scale(1.03); }
-      28% { transform: scale(1); }
-      42% { transform: scale(1.03); }
-      70% { transform: scale(1); }
+    .intro-done .envelope:not(.opened) {
+      animation: envelopeBreath 3s infinite ease-in-out;
+    }
+
+    @keyframes envelopeBreath {
+      0%, 100% { transform: rotateX(8deg) rotateZ(-1deg) translateY(0); }
+      50% { transform: rotateX(6deg) rotateZ(-1deg) translateY(-8px); }
     }
 
     .envelope.opened {
-      animation: none;
+      animation: none !important;
+      transform: rotateX(0deg) rotateZ(0deg) translateY(0) !important;
     }
 
     .envelope-back {
       position: absolute;
       inset: 0;
-      background-color: var(--olive-dark);
+      background: linear-gradient(135deg, var(--olive-dark) 0%, #293510 100%);
       border-radius: 8px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
       z-index: 1;
     }
 
@@ -78,12 +150,13 @@
       left: 0;
       width: 0;
       height: 0;
-      border-left: 160px solid transparent;
-      border-right: 160px solid transparent;
-      border-top: 120px solid var(--olive-flap);
+      border-left: 170px solid transparent;
+      border-right: 170px solid transparent;
+      border-top: 125px solid var(--olive-flap);
       transform-origin: top center;
-      transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 5;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
     }
 
     .envelope.opened .envelope-flap {
@@ -95,14 +168,14 @@
       position: absolute;
       bottom: 10px;
       left: 15px;
-      width: 290px;
-      height: 195px;
+      width: 310px;
+      height: 205px;
       background: #fff;
       border-radius: 4px;
       overflow: hidden;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      box-shadow: 0 -2px 14px rgba(0,0,0,0.3);
       z-index: 2;
-      transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.85s cubic-bezier(0.2, 0.8, 0.2, 1);
       pointer-events: none;
     }
 
@@ -112,7 +185,7 @@
     }
 
     .envelope.opened .envelope-letter {
-      transform: translateY(-130px);
+      transform: translateY(-150px);
     }
 
     .envelope-pocket {
@@ -121,46 +194,96 @@
       left: 0;
       width: 0;
       height: 0;
-      border-left: 160px solid var(--olive-body);
-      border-right: 160px solid var(--olive-body);
-      border-top: 110px solid transparent;
-      border-bottom: 110px solid var(--olive-body);
+      border-left: 170px solid var(--olive-body);
+      border-right: 170px solid var(--olive-body);
+      border-top: 115px solid transparent;
+      border-bottom: 115px solid var(--olive-body);
       border-radius: 0 0 8px 8px;
       z-index: 3;
-      filter: drop-shadow(0 -2px 4px rgba(0,0,0,0.08));
-    }
-
-    .seal-hint {
-      position: absolute;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 6;
-      background: #fff;
-      color: var(--olive-flap);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: bold;
-      letter-spacing: 1px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      transition: opacity 0.3s;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    .envelope.opened .seal-hint {
-      opacity: 0;
+      filter: drop-shadow(0 -3px 6px rgba(0,0,0,0.25));
     }
 
     /* =========================================
-       2. CAPA OVERLAY FULLSCREEN
+       3. SELLO DE LACRE Y BOTÓN
+       ========================================= */
+    .wax-seal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 6;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe17d 0%, var(--gold-seal) 50%, var(--gold-dark) 100%);
+      box-shadow: 
+        0 6px 18px rgba(0,0,0,0.55),
+        inset 0 2px 4px rgba(255,255,255,0.7),
+        inset 0 -3px 5px rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px dashed rgba(255, 240, 180, 0.45);
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.3s ease;
+    }
+
+    .wax-seal svg {
+      width: 28px;
+      height: 28px;
+      fill: #ffffff;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+
+    .envelope.opened .wax-seal {
+      opacity: 0 !important;
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+
+    .open-tag {
+      margin-top: 30px;
+      background: rgba(18, 12, 8, 0.88);
+      border: 1.5px solid var(--gold-seal);
+      color: #f7e7c4;
+      padding: 10px 26px;
+      border-radius: 25px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.6s ease, transform 0.4s ease, background 0.3s;
+    }
+
+    .open-tag:hover {
+      background: rgba(32, 22, 14, 0.95);
+      border-color: #ffd966;
+    }
+
+    .intro-done .open-tag {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .envelope.opened ~ .open-tag,
+    .is-opened-tag {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    /* =========================================
+       4. CAPA FULLSCREEN & BOTÓN "X" ESTILO IPHONE
        ========================================= */
     #fullscreen-layer {
       position: fixed;
       inset: 0;
       z-index: 9999;
-      background: rgba(18, 24, 12, 0);
+      background: rgba(10, 7, 5, 0);
       visibility: hidden;
       pointer-events: none;
       transition: background 0.6s ease;
@@ -173,7 +296,57 @@
     #fullscreen-layer.active {
       visibility: visible;
       pointer-events: auto;
-      background: rgba(18, 24, 12, 0.88);
+      background: rgba(10, 7, 5, 0.94);
+    }
+
+    /* Botón "X" posicionado exactamente como en iOS */
+    .close-btn-ios {
+      position: fixed;
+      top: max(18px, env(safe-area-inset-top) + 12px);
+      right: max(18px, env(safe-area-inset-right) + 12px);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(40, 30, 22, 0.68);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 10001;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.85);
+      transition: opacity 0.35s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s;
+    }
+
+    #fullscreen-layer.active .close-btn-ios {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .close-btn-ios:hover {
+      background: rgba(65, 48, 32, 0.88);
+      transform: scale(1.08);
+    }
+
+    .close-btn-ios:active {
+      transform: scale(0.92);
+    }
+
+    .close-btn-ios svg {
+      width: 18px;
+      height: 18px;
+      stroke: #f7e7c4;
+      stroke-width: 2.4;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     #card-viewport {
@@ -186,13 +359,30 @@
       justify-content: center;
       padding: 30px 10px;
       touch-action: pan-y pinch-zoom;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(212, 175, 55, 0.35) transparent;
+    }
+
+    /* Scrollbar sutil y elegante en PC (evita la barra gris de Windows) */
+    #card-viewport::-webkit-scrollbar {
+      width: 6px;
+    }
+    #card-viewport::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #card-viewport::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.35);
+      border-radius: 10px;
+    }
+    #card-viewport::-webkit-scrollbar-thumb:hover {
+      background: rgba(212, 175, 55, 0.65);
     }
 
     #zoom-card {
       position: absolute;
       will-change: transform, width, height, top, left;
-      border-radius: 6px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      border-radius: 8px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.65);
       transform-origin: center top;
       background: #fff;
     }
@@ -203,58 +393,56 @@
       display: block;
       pointer-events: none;
     }
-
-    .swipe-close-indicator {
-      position: fixed;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.55);
-      color: #fff;
-      font-size: 11px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      padding: 8px 18px;
-      border-radius: 20px;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 10000;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-      pointer-events: none;
-    }
-
-    #fullscreen-layer.active .swipe-close-indicator {
-      opacity: 0.9;
-    }
   </style>
 </head>
 <body>
 
-  <!-- Audios requeridos -->
+  <!-- Audios -->
   <audio id="snd-flap" src="sobre.mp3" preload="auto"></audio>
   <audio id="snd-music" src="musica.mp3" preload="auto"></audio>
 
-  <div class="scene">
-    <div class="envelope" id="envelope">
-      <div class="envelope-back"></div>
-      
-      <!-- AQUÍ ESTÁ LA IMAGEN ORIGINAL: .png -->
-      <div class="envelope-letter" id="inner-letter">
-        <img src="invitacion.png" alt="Invitación de Boda">
-      </div>
+  <!-- Fondo Fotográfico -->
+  <div class="bg-cinematic"></div>
+  <div class="bg-vignette"></div>
 
-      <div class="envelope-pocket"></div>
-      <div class="envelope-flap"></div>
-      <div class="seal-hint">TOCA PARA ABRIR</div>
+  <!-- Escenario Central del Sobre -->
+  <div class="envelope-stage">
+    <div class="scene">
+      <div class="envelope" id="envelope">
+        <div class="envelope-back"></div>
+        
+        <div class="envelope-letter" id="inner-letter">
+          <img src="invitacion.png" alt="Invitación de Boda">
+        </div>
+
+        <div class="envelope-pocket"></div>
+        <div class="envelope-flap"></div>
+
+        <!-- Sello de Lacre Dorado -->
+        <div class="wax-seal">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </div>
+      </div>
     </div>
+
+    <!-- Botón "Toca para abrir" -->
+    <div class="open-tag" id="open-btn">Toca para abrir</div>
   </div>
 
+  <!-- Capa Overlay Fullscreen -->
   <div id="fullscreen-layer">
-    <div class="swipe-close-indicator">▲ Desliza hacia arriba para cerrar</div>
+    <!-- Botón Cerrar (Posición iOS) -->
+    <button class="close-btn-ios" id="close-btn" aria-label="Cerrar invitación">
+      <svg viewBox="0 0 24 24">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
     <div id="card-viewport">
       <div id="zoom-card">
-        <!-- AQUÍ ESTABA EL ERROR: decía .jpg, ahora dice .png -->
         <img src="invitacion.png" alt="Invitación Pantalla Completa">
       </div>
     </div>
@@ -263,6 +451,8 @@
   <script>
     const envelope = document.getElementById('envelope');
     const innerLetter = document.getElementById('inner-letter');
+    const openBtn = document.getElementById('open-btn');
+    const closeBtn = document.getElementById('close-btn');
     const fsLayer = document.getElementById('fullscreen-layer');
     const cardViewport = document.getElementById('card-viewport');
     const zoomCard = document.getElementById('zoom-card');
@@ -274,6 +464,13 @@
     let isTransitioning = false;
     let autoScrollRafId = null;
     let autoScrollCancelled = false;
+    let introFinished = false;
+
+    // Habilita interacción al terminar el vuelo
+    setTimeout(() => {
+      document.body.classList.add('intro-done');
+      introFinished = true;
+    }, 2800);
 
     function playAudio(audio) {
       if (!audio) return;
@@ -281,25 +478,43 @@
       audio.play().catch(err => console.log('Autoplay prevenido:', err));
     }
 
-    envelope.addEventListener('click', () => {
-      if (isOpen || isTransitioning) return;
-      openInvitation();
+    // Permitir clic en el sobre y en el botón dorado
+    [envelope, openBtn].forEach(el => {
+      el.addEventListener('click', () => {
+        if (isOpen || isTransitioning) return;
+        openInvitation();
+      });
+    });
+
+    // Botón "X" de cerrar
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeInvitation();
+    });
+
+    // Cerrar con la tecla Escape en computadoras de escritorio
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen && !isTransitioning) {
+        closeInvitation();
+      }
     });
 
     function openInvitation() {
       isTransitioning = true;
       envelope.classList.add('opened');
+      openBtn.classList.add('is-opened-tag');
 
       playAudio(sndFlap);
       playAudio(sndMusic);
 
       setTimeout(() => {
         const startRect = innerLetter.getBoundingClientRect();
-        const targetWidth = Math.min(window.innerWidth * 0.92, 480);
+        // Optimizado para Android (ancho generoso) y Escritorio (tope de 500px)
+        const targetWidth = Math.min(window.innerWidth * 0.94, 500);
         const ratio = startRect.width / startRect.height;
         const targetHeight = targetWidth / ratio;
         const targetLeft = (window.innerWidth - targetWidth) / 2;
-        const targetTop = 30; 
+        const targetTop = 25; 
 
         zoomCard.style.transition = 'none';
         zoomCard.style.position = 'fixed';
@@ -311,7 +526,7 @@
         fsLayer.classList.add('active');
         innerLetter.style.visibility = 'hidden';
 
-        zoomCard.getBoundingClientRect(); // Forzar reflow
+        zoomCard.getBoundingClientRect(); // Reflow
 
         zoomCard.style.transition = 'all 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
         zoomCard.style.top = `${targetTop}px`;
@@ -370,6 +585,7 @@
       cardViewport.addEventListener(evt, cancelAutoScroll, { passive: true });
     });
 
+    // Se mantiene el gesto de deslizar arriba como alternativa intuitiva
     let touchStartY = 0;
     let touchStartX = 0;
 
@@ -382,7 +598,7 @@
       const deltaY = touchStartY - e.touches[0].clientY;
       const deltaX = Math.abs(touchStartX - e.touches[0].clientX);
 
-      if (deltaY > 75 && deltaY > deltaX) {
+      if (deltaY > 80 && deltaY > deltaX) {
         closeInvitation();
       }
     }, { passive: true });
@@ -409,7 +625,7 @@
 
       fsLayer.classList.remove('active');
 
-      zoomCard.getBoundingClientRect(); // Forzar reflow
+      zoomCard.getBoundingClientRect(); // Reflow
 
       zoomCard.style.transition = 'all 0.75s cubic-bezier(0.4, 0, 0.2, 1)';
       zoomCard.style.top = `${targetRect.top}px`;
@@ -423,6 +639,7 @@
         zoomCard.removeAttribute('style');
 
         envelope.classList.remove('opened');
+        openBtn.classList.remove('is-opened-tag');
 
         setTimeout(() => {
           isOpen = false;
