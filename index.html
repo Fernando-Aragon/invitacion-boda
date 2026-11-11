@@ -1,15 +1,437 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invitación de Boda</title>
-    <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f0f0; }
-        img { max-width: 100%; height: auto; display: block; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+  <title>Invitación de Boda</title>
+  <style>
+    :root {
+      --olive-body: #6B8E23;
+      --olive-flap: #556B2F;
+      --olive-dark: #3E4F22;
+      --bg-color: #F4F5F0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      font-family: 'Playfair Display', Georgia, serif;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* =========================================
+       1. ESCENARIO DEL SOBRE (3D)
+       ========================================= */
+    .scene {
+      position: relative;
+      width: 320px;
+      height: 220px;
+      perspective: 1000px;
+      z-index: 10;
+    }
+
+    .envelope {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      animation: heartbeat 2.6s infinite ease-in-out;
+      transition: transform 0.4s ease;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.03); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.03); }
+      70% { transform: scale(1); }
+    }
+
+    .envelope.opened {
+      animation: none;
+    }
+
+    .envelope-back {
+      position: absolute;
+      inset: 0;
+      background-color: var(--olive-dark);
+      border-radius: 8px;
+      z-index: 1;
+    }
+
+    .envelope-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      border-left: 160px solid transparent;
+      border-right: 160px solid transparent;
+      border-top: 120px solid var(--olive-flap);
+      transform-origin: top center;
+      transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 5;
+    }
+
+    .envelope.opened .envelope-flap {
+      transform: rotateX(180deg);
+      z-index: 1;
+    }
+
+    .envelope-letter {
+      position: absolute;
+      bottom: 10px;
+      left: 15px;
+      width: 290px;
+      height: 195px;
+      background: #fff;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      z-index: 2;
+      transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .envelope-letter img {
+      width: 100%;
+      display: block;
+    }
+
+    .envelope.opened .envelope-letter {
+      transform: translateY(-130px);
+    }
+
+    .envelope-pocket {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      border-left: 160px solid var(--olive-body);
+      border-right: 160px solid var(--olive-body);
+      border-top: 110px solid transparent;
+      border-bottom: 110px solid var(--olive-body);
+      border-radius: 0 0 8px 8px;
+      z-index: 3;
+      filter: drop-shadow(0 -2px 4px rgba(0,0,0,0.08));
+    }
+
+    .seal-hint {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 6;
+      background: #fff;
+      color: var(--olive-flap);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: opacity 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .envelope.opened .seal-hint {
+      opacity: 0;
+    }
+
+    /* =========================================
+       2. CAPA OVERLAY FULLSCREEN
+       ========================================= */
+    #fullscreen-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(18, 24, 12, 0);
+      visibility: hidden;
+      pointer-events: none;
+      transition: background 0.6s ease;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: hidden;
+    }
+
+    #fullscreen-layer.active {
+      visibility: visible;
+      pointer-events: auto;
+      background: rgba(18, 24, 12, 0.88);
+    }
+
+    #card-viewport {
+      width: 100%;
+      height: 100%;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      justify-content: center;
+      padding: 30px 10px;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    #zoom-card {
+      position: absolute;
+      will-change: transform, width, height, top, left;
+      border-radius: 6px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      transform-origin: center top;
+      background: #fff;
+    }
+
+    #zoom-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: none;
+    }
+
+    .swipe-close-indicator {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 8px 18px;
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    #fullscreen-layer.active .swipe-close-indicator {
+      opacity: 0.9;
+    }
+  </style>
 </head>
 <body>
-    <img src="invitacion.png" alt="Invitación de boda de Fernando y [Nombre de la pareja]">
+
+  <!-- Audios requeridos -->
+  <audio id="snd-flap" src="sobre.mp3" preload="auto"></audio>
+  <audio id="snd-music" src="musica.mp3" preload="auto"></audio>
+
+  <div class="scene">
+    <div class="envelope" id="envelope">
+      <div class="envelope-back"></div>
+      
+      <!-- AQUÍ ESTÁ LA IMAGEN ORIGINAL: .png -->
+      <div class="envelope-letter" id="inner-letter">
+        <img src="invitacion.png" alt="Invitación de Boda">
+      </div>
+
+      <div class="envelope-pocket"></div>
+      <div class="envelope-flap"></div>
+      <div class="seal-hint">TOCA PARA ABRIR</div>
+    </div>
+  </div>
+
+  <div id="fullscreen-layer">
+    <div class="swipe-close-indicator">▲ Desliza hacia arriba para cerrar</div>
+    <div id="card-viewport">
+      <div id="zoom-card">
+        <!-- AQUÍ ESTABA EL ERROR: decía .jpg, ahora dice .png -->
+        <img src="invitacion.png" alt="Invitación Pantalla Completa">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const envelope = document.getElementById('envelope');
+    const innerLetter = document.getElementById('inner-letter');
+    const fsLayer = document.getElementById('fullscreen-layer');
+    const cardViewport = document.getElementById('card-viewport');
+    const zoomCard = document.getElementById('zoom-card');
+
+    const sndFlap = document.getElementById('snd-flap');
+    const sndMusic = document.getElementById('snd-music');
+
+    let isOpen = false;
+    let isTransitioning = false;
+    let autoScrollRafId = null;
+    let autoScrollCancelled = false;
+
+    function playAudio(audio) {
+      if (!audio) return;
+      audio.currentTime = 0;
+      audio.play().catch(err => console.log('Autoplay prevenido:', err));
+    }
+
+    envelope.addEventListener('click', () => {
+      if (isOpen || isTransitioning) return;
+      openInvitation();
+    });
+
+    function openInvitation() {
+      isTransitioning = true;
+      envelope.classList.add('opened');
+
+      playAudio(sndFlap);
+      playAudio(sndMusic);
+
+      setTimeout(() => {
+        const startRect = innerLetter.getBoundingClientRect();
+        const targetWidth = Math.min(window.innerWidth * 0.92, 480);
+        const ratio = startRect.width / startRect.height;
+        const targetHeight = targetWidth / ratio;
+        const targetLeft = (window.innerWidth - targetWidth) / 2;
+        const targetTop = 30; 
+
+        zoomCard.style.transition = 'none';
+        zoomCard.style.position = 'fixed';
+        zoomCard.style.top = `${startRect.top}px`;
+        zoomCard.style.left = `${startRect.left}px`;
+        zoomCard.style.width = `${startRect.width}px`;
+        zoomCard.style.height = `${startRect.height}px`;
+
+        fsLayer.classList.add('active');
+        innerLetter.style.visibility = 'hidden';
+
+        zoomCard.getBoundingClientRect(); // Forzar reflow
+
+        zoomCard.style.transition = 'all 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
+        zoomCard.style.top = `${targetTop}px`;
+        zoomCard.style.left = `${targetLeft}px`;
+        zoomCard.style.width = `${targetWidth}px`;
+        zoomCard.style.height = `${targetHeight}px`;
+
+        setTimeout(() => {
+          zoomCard.style.position = 'relative';
+          zoomCard.style.top = '0';
+          zoomCard.style.left = '0';
+          zoomCard.style.width = `${targetWidth}px`;
+          zoomCard.style.height = 'auto';
+          zoomCard.style.transition = 'none';
+
+          isOpen = true;
+          isTransitioning = false;
+
+          startAutoScroll(15000);
+        }, 850);
+
+      }, 850);
+    }
+
+    function startAutoScroll(durationMs) {
+      autoScrollCancelled = false;
+      const maxScroll = cardViewport.scrollHeight - cardViewport.clientHeight;
+      if (maxScroll <= 0) return;
+
+      const startTime = performance.now();
+      const startScrollTop = cardViewport.scrollTop;
+
+      function step(currentTime) {
+        if (autoScrollCancelled) return;
+
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / durationMs, 1);
+        
+        cardViewport.scrollTop = startScrollTop + (maxScroll * progress);
+
+        if (progress < 1) {
+          autoScrollRafId = requestAnimationFrame(step);
+        }
+      }
+      autoScrollRafId = requestAnimationFrame(step);
+    }
+
+    function cancelAutoScroll() {
+      if (!autoScrollCancelled) {
+        autoScrollCancelled = true;
+        if (autoScrollRafId) cancelAnimationFrame(autoScrollRafId);
+      }
+    }
+
+    ['touchstart', 'mousedown', 'wheel', 'pointerdown'].forEach(evt => {
+      cardViewport.addEventListener(evt, cancelAutoScroll, { passive: true });
+    });
+
+    let touchStartY = 0;
+    let touchStartX = 0;
+
+    cardViewport.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    cardViewport.addEventListener('touchend', (e) => {
+      const deltaY = touchStartY - e.touches[0].clientY;
+      const deltaX = Math.abs(touchStartX - e.touches[0].clientX);
+
+      if (deltaY > 75 && deltaY > deltaX) {
+        closeInvitation();
+      }
+    }, { passive: true });
+
+    function closeInvitation() {
+      if (!isOpen || isTransitioning) return;
+      isTransitioning = true;
+      cancelAutoScroll();
+
+      playAudio(sndFlap);
+      if (sndMusic) {
+        sndMusic.pause();
+        sndMusic.currentTime = 0;
+      }
+
+      const currentRect = zoomCard.getBoundingClientRect();
+      const targetRect = innerLetter.getBoundingClientRect();
+
+      zoomCard.style.position = 'fixed';
+      zoomCard.style.top = `${currentRect.top}px`;
+      zoomCard.style.left = `${currentRect.left}px`;
+      zoomCard.style.width = `${currentRect.width}px`;
+      zoomCard.style.height = `${currentRect.height}px`;
+
+      fsLayer.classList.remove('active');
+
+      zoomCard.getBoundingClientRect(); // Forzar reflow
+
+      zoomCard.style.transition = 'all 0.75s cubic-bezier(0.4, 0, 0.2, 1)';
+      zoomCard.style.top = `${targetRect.top}px`;
+      zoomCard.style.left = `${targetRect.left}px`;
+      zoomCard.style.width = `${targetRect.width}px`;
+      zoomCard.style.height = `${targetRect.height}px`;
+
+      setTimeout(() => {
+        fsLayer.style.visibility = 'hidden';
+        innerLetter.style.visibility = 'visible';
+        zoomCard.removeAttribute('style');
+
+        envelope.classList.remove('opened');
+
+        setTimeout(() => {
+          isOpen = false;
+          isTransitioning = false;
+          cardViewport.scrollTop = 0;
+        }, 750);
+
+      }, 750);
+    }
+  </script>
 </body>
 </html>
