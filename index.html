@@ -34,18 +34,26 @@
     }
 
     /* =========================================
-       1. FONDO FOTOGRÁFICO CON ZOOM CINEMÁTICO
+       1. FONDO FOTOGRÁFICO RESPONSIVO (PC vs CELULAR)
        ========================================= */
     .bg-cinematic {
       position: fixed;
-      inset: -5%;
-      width: 110%;
-      height: 110%;
-      background: url('fondo.jpg') center center / cover no-repeat;
+      inset: 0; /* Ocupa exactamente toda la pantalla */
+      width: 100%;
+      height: 100%;
+      /* Por defecto, carga la imagen de celular */
+      background: url('fondo_celular.jpg') center center / cover no-repeat;
       filter: brightness(0.92) contrast(1.05);
       z-index: 1;
-      transform: scale(1.12);
+      /* Animación de entrada suave (sin hacer zoom excesivo) */
       animation: cameraGlide 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Si la pantalla es mayor a 768px (Tablets o PC), carga la de escritorio */
+    @media (min-width: 768px) {
+      .bg-cinematic {
+        background-image: url('fondo_escritorio.jpg');
+      }
     }
 
     .bg-vignette {
@@ -56,10 +64,10 @@
       z-index: 2;
     }
 
+    /* Animación mucho más sutil para no recortar la imagen */
     @keyframes cameraGlide {
-      0% { transform: scale(1.15) translateY(-20px); filter: brightness(0.8) blur(3px); }
-      50% { filter: brightness(0.92) blur(0px); }
-      100% { transform: scale(1) translateY(0); filter: brightness(0.92) blur(0px); }
+      0% { transform: scale(1.03); filter: brightness(0.8) blur(2px); }
+      100% { transform: scale(1); filter: brightness(0.92) blur(0px); }
     }
 
     /* =========================================
@@ -77,11 +85,8 @@
       transition: transform 0.3s ease;
     }
 
-    /* Ajuste responsivo para celulares Android con pantalla más angosta (<= 360px) */
     @media (max-width: 360px) {
-      .envelope-stage {
-        transform: scale(0.86);
-      }
+      .envelope-stage { transform: scale(0.86); }
     }
 
     @keyframes envelopeApproach {
@@ -96,7 +101,6 @@
       transform-style: preserve-3d;
     }
 
-    /* Sombra proyectada en la mesa */
     .scene::after {
       content: '';
       position: absolute;
@@ -299,7 +303,6 @@
       background: rgba(10, 7, 5, 0.94);
     }
 
-    /* Botón "X" posicionado exactamente como en iOS */
     .close-btn-ios {
       position: fixed;
       top: max(18px, env(safe-area-inset-top) + 12px);
@@ -363,13 +366,8 @@
       scrollbar-color: rgba(212, 175, 55, 0.35) transparent;
     }
 
-    /* Scrollbar sutil y elegante en PC (evita la barra gris de Windows) */
-    #card-viewport::-webkit-scrollbar {
-      width: 6px;
-    }
-    #card-viewport::-webkit-scrollbar-track {
-      background: transparent;
-    }
+    #card-viewport::-webkit-scrollbar { width: 6px; }
+    #card-viewport::-webkit-scrollbar-track { background: transparent; }
     #card-viewport::-webkit-scrollbar-thumb {
       background: rgba(212, 175, 55, 0.35);
       border-radius: 10px;
@@ -397,15 +395,12 @@
 </head>
 <body>
 
-  <!-- Audios -->
   <audio id="snd-flap" src="sobre.mp3" preload="auto"></audio>
   <audio id="snd-music" src="musica.mp3" preload="auto"></audio>
 
-  <!-- Fondo Fotográfico -->
   <div class="bg-cinematic"></div>
   <div class="bg-vignette"></div>
 
-  <!-- Escenario Central del Sobre -->
   <div class="envelope-stage">
     <div class="scene">
       <div class="envelope" id="envelope">
@@ -418,7 +413,6 @@
         <div class="envelope-pocket"></div>
         <div class="envelope-flap"></div>
 
-        <!-- Sello de Lacre Dorado -->
         <div class="wax-seal">
           <svg viewBox="0 0 24 24">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -427,13 +421,10 @@
       </div>
     </div>
 
-    <!-- Botón "Toca para abrir" -->
     <div class="open-tag" id="open-btn">Toca para abrir</div>
   </div>
 
-  <!-- Capa Overlay Fullscreen -->
   <div id="fullscreen-layer">
-    <!-- Botón Cerrar (Posición iOS) -->
     <button class="close-btn-ios" id="close-btn" aria-label="Cerrar invitación">
       <svg viewBox="0 0 24 24">
         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -464,12 +455,9 @@
     let isTransitioning = false;
     let autoScrollRafId = null;
     let autoScrollCancelled = false;
-    let introFinished = false;
 
-    // Habilita interacción al terminar el vuelo
     setTimeout(() => {
       document.body.classList.add('intro-done');
-      introFinished = true;
     }, 2800);
 
     function playAudio(audio) {
@@ -478,7 +466,6 @@
       audio.play().catch(err => console.log('Autoplay prevenido:', err));
     }
 
-    // Permitir clic en el sobre y en el botón dorado
     [envelope, openBtn].forEach(el => {
       el.addEventListener('click', () => {
         if (isOpen || isTransitioning) return;
@@ -486,13 +473,11 @@
       });
     });
 
-    // Botón "X" de cerrar
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       closeInvitation();
     });
 
-    // Cerrar con la tecla Escape en computadoras de escritorio
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && isOpen && !isTransitioning) {
         closeInvitation();
@@ -509,7 +494,6 @@
 
       setTimeout(() => {
         const startRect = innerLetter.getBoundingClientRect();
-        // Optimizado para Android (ancho generoso) y Escritorio (tope de 500px)
         const targetWidth = Math.min(window.innerWidth * 0.94, 500);
         const ratio = startRect.width / startRect.height;
         const targetHeight = targetWidth / ratio;
@@ -585,7 +569,6 @@
       cardViewport.addEventListener(evt, cancelAutoScroll, { passive: true });
     });
 
-    // Se mantiene el gesto de deslizar arriba como alternativa intuitiva
     let touchStartY = 0;
     let touchStartX = 0;
 
@@ -634,7 +617,9 @@
       zoomCard.style.height = `${targetRect.height}px`;
 
       setTimeout(() => {
-        fsLayer.style.visibility = 'hidden';
+        // LA CORRECCIÓN DEL BUG ESTÁ AQUÍ:
+        // Eliminamos el 'fsLayer.style.visibility = hidden' que rompía la reapertura.
+        
         innerLetter.style.visibility = 'visible';
         zoomCard.removeAttribute('style');
 
