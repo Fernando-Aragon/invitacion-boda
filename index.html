@@ -2,15 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover">
+  <!-- Viewport modificado para permitir zoom out libre en Android -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
   
-  <!-- ========== OPEN GRAPH PARA VISTA PREVIA EN WHATSAPP ========== -->
+  <!-- ========== VISTA PREVIA WHATSAPP (Open Graph) ========== -->
   <meta property="og:title" content="Cecy & Felipe - Invitación de Boda">
   <meta property="og:description" content="Nos hace muchísima ilusión invitarte. Toca para abrir nuestra invitación.">
-  <meta property="og:image" content="https://fernando-aragon.github.io/invitacion-boda/sello.png">
+  <meta property="og:image" content="https://fernando-aragon.github.io/invitacion-boda/preview.jpg">
   <meta property="og:url" content="https://fernando-aragon.github.io/invitacion-boda/">
   <meta property="og:type" content="website">
-  <!-- Nota: La imagen 'sello.png' debe ser un enlace absoluto (con https://...). Se recomienda que la imagen pese menos de 600KB[reference:3]. -->
   
   <title>Invitación de Boda - Cecy & Felipe</title>
   
@@ -59,7 +59,7 @@
       z-index: 1;
       opacity: 0;
       transition: opacity 0.8s ease;
-      transform: translateZ(0); /* Aceleración GPU */
+      transform: translateZ(0);
     }
 
     .ready .bg-cinematic {
@@ -201,7 +201,8 @@
       overflow: hidden;
       box-shadow: 0 -2px 14px rgba(0,0,0,0.3);
       z-index: 2;
-      transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s, z-index 0s 0.5s;
+      /* Retraso para que la carta se guarde antes de que la pestaña se cierre */
+      transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s, z-index 0s 0.3s;
       pointer-events: none;
     }
 
@@ -282,7 +283,7 @@
     .envelope.opened ~ .open-tag, .is-opened-tag { opacity: 0 !important; pointer-events: none; transition: opacity 0.3s ease; }
 
     /* =========================================
-       5. PARTÍCULAS
+       5. PARTÍCULAS (MÁS BRILLANTES)
        ========================================= */
     .particle-wind {
       position: fixed;
@@ -387,13 +388,11 @@
     #card-viewport::-webkit-scrollbar { display: none; }
 
     /* =========================================
-       7. TARJETA ZOOM (CORRECCIÓN DEL SALTO)
+       7. TARJETA ZOOM
        ========================================= */
     #zoom-card {
       position: absolute;
-      /* La corrección clave: preparar la GPU antes de la animación */
       will-change: transform, width, height, top, left; 
-      /* Forzar la capa GPU también ayuda en Android */
       transform: translateZ(0); 
       
       border-radius: 8px;
@@ -468,7 +467,7 @@
     let isOpen = false;
     let isTransitioning = false;
     let autoScrollRafId = null;
-    let autoScrollTimeoutId = null; // Para el retraso del autoscroll
+    let autoScrollTimeoutId = null;
     let autoScrollCancelled = false;
     
     let idleParticlesInterval = null;
@@ -533,7 +532,8 @@
     }
 
     function createWindParticles() {
-      const colors = ['#d4af37', '#617d26', '#ffe17d', '#ffffff'];
+      // Colores más brillantes y saturados
+      const colors = ['#ffd700', '#a2d149', '#fffacd', '#ffffff'];
       const numParticles = 80;
 
       for (let i = 0; i < numParticles; i++) {
@@ -544,6 +544,8 @@
         particle.style.width = `${size}px`;
         particle.style.height = `${size}px`;
         particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        // Añadir un resplandor para que destaquen
+        particle.style.boxShadow = `0 0 15px 2px ${colors[Math.floor(Math.random() * colors.length)]}`;
         
         particle.style.left = '50%';
         particle.style.top = '50%';
@@ -603,8 +605,9 @@
 
         const startRect = innerLetter.getBoundingClientRect();
         
+        // Zoom reducido para celular (1.37)
         const isMobile = window.innerWidth < 768;
-        const zoomMultiplier = isMobile ? 1.44 : 1.75; 
+        const zoomMultiplier = isMobile ? 1.37 : 1.75; 
         const targetWidth = Math.min(window.innerWidth * zoomMultiplier, 1100); 
         
         const ratio = startRect.width / startRect.height;
@@ -648,13 +651,12 @@
           isOpen = true;
           isTransitioning = false;
 
-          // Autoscroll con retraso de 2 segundos
+          // Autoscroll retrasado 3 segundos
           autoScrollTimeoutId = setTimeout(() => {
             if (!autoScrollCancelled) {
-              // Velocidad reducida 20%: 16500 * 1.2 = 19800
-              startAutoScroll(19800);
+              startAutoScroll(19800); // Velocidad reducida
             }
-          }, 2000);
+          }, 3000);
 
         }, 850);
 
@@ -665,7 +667,6 @@
       if (!isOpen || isTransitioning) return;
       isTransitioning = true;
       
-      // Cancelar el temporizador del autoscroll
       if (autoScrollTimeoutId) clearTimeout(autoScrollTimeoutId);
       cancelAutoScroll();
       
@@ -696,23 +697,37 @@
       zoomCard.style.width = `${targetRect.width}px`;
       zoomCard.style.height = `${targetRect.height}px`;
 
+      // CORRECCIÓN DE CIERRE: 
+      // 1. Retrasamos la visibilidad de la carta interna (para que la clonada llegue primero)
+      // 2. Ocultamos el clon (display: none) justo después del movimiento
       setTimeout(() => {
+        // El clon ya llegó a su destino, lo ocultamos
+        zoomCard.style.display = 'none';
+        
+        // Hacemos visible la carta interna original
         innerLetter.style.visibility = 'visible';
+        
+        // Quitamos los estilos en línea del clon para la próxima apertura
         zoomCard.removeAttribute('style');
-
-        envelope.classList.remove('opened');
-        openBtn.classList.remove('is-opened-tag');
-
+        
+        // El sobre se cierra (la pestaña sube) DESPUÉS de que la carta ya está dentro
         setTimeout(() => {
-          isOpen = false;
-          isTransitioning = false;
-          cardViewport.scrollTop = 0;
-          cardViewport.scrollLeft = 0;
-          
-          startIdleParticles();
-        }, 750);
+          envelope.classList.remove('opened');
+          openBtn.classList.remove('is-opened-tag');
 
-      }, 750);
+          // Restauramos el clon para la próxima vez
+          setTimeout(() => {
+            zoomCard.style.display = 'block'; // Volver a mostrarlo
+            isOpen = false;
+            isTransitioning = false;
+            cardViewport.scrollTop = 0;
+            cardViewport.scrollLeft = 0;
+            
+            startIdleParticles();
+          }, 750);
+        }, 300); // Pequeño retraso para que el sobre cierre después de que la carta esté "guardada"
+
+      }, 750); // Tiempo que tarda el clon en volver al sobre
     }
 
     function startAutoScroll(durationMs) {
@@ -740,7 +755,6 @@
       }
     }
 
-    // Cancelar el autoscroll si el usuario interactúa
     ['touchstart', 'mousedown', 'wheel', 'pointerdown'].forEach(evt => {
       cardViewport.addEventListener(evt, cancelAutoScroll, { passive: true });
     });
