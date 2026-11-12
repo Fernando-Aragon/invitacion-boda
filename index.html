@@ -219,7 +219,7 @@
     }
 
     /* =========================================
-       4. SELLO PERSONALIZADO (SIN SOMBRA Y CON ZOOM)
+       4. SELLO PERSONALIZADO (REDUCIDO 10%)
        ========================================= */
     .wax-seal {
       position: absolute;
@@ -227,13 +227,12 @@
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 6;
-      width: 85px;
-      height: 85px;
+      width: 76px; /* Antes 85px */
+      height: 76px; /* Antes 85px */
       display: flex;
       justify-content: center;
       align-items: center;
       pointer-events: none;
-      /* Mantenemos la transición suave para el nuevo efecto */
       transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
       transform-style: preserve-3d;
     }
@@ -245,7 +244,6 @@
     }
 
     .envelope.opened .wax-seal {
-      /* En lugar de hacerse pequeño, ahora crece y salta hacia el usuario */
       opacity: 0 !important;
       transform: translate(-50%, -50%) scale(1.8) translateZ(80px);
     }
@@ -314,7 +312,7 @@
     }
 
     /* =========================================
-       6. CAPA FULLSCREEN
+       6. CAPA FULLSCREEN Y BOTÓN X FIJO
        ========================================= */
     #fullscreen-layer {
       position: fixed;
@@ -336,12 +334,13 @@
       background: rgba(10, 7, 5, 0.94);
     }
 
+    /* BOTÓN X TOTALMENTE INDEPENDIENTE Y FIJO */
     .close-btn-ios {
       position: fixed;
-      top: max(18px, env(safe-area-inset-top) + 12px);
-      right: max(18px, env(safe-area-inset-right) + 12px);
-      width: 42px;
-      height: 42px;
+      top: max(20px, env(safe-area-inset-top) + 15px);
+      right: max(20px, env(safe-area-inset-right) + 15px);
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: rgba(40, 30, 22, 0.68);
       border: 1px solid rgba(255, 255, 255, 0.22);
@@ -352,7 +351,7 @@
       cursor: pointer;
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      z-index: 10001;
+      z-index: 99999; /* Por encima de todo */
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
       opacity: 0;
       pointer-events: none;
@@ -360,7 +359,12 @@
       transition: opacity 0.35s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s;
     }
 
-    #fullscreen-layer.active .close-btn-ios { opacity: 1; pointer-events: auto; transform: scale(1); }
+    .close-btn-ios.visible { 
+      opacity: 1; 
+      pointer-events: auto; 
+      transform: scale(1); 
+    }
+    
     .close-btn-ios:hover { background: rgba(65, 48, 32, 0.88); transform: scale(1.08); }
     .close-btn-ios:active { transform: scale(0.92); }
     .close-btn-ios svg { width: 18px; height: 18px; stroke: #f7e7c4; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -368,20 +372,19 @@
     #card-viewport {
       width: 100%;
       height: 100%;
-      overflow-y: scroll;
-      overflow-x: hidden;
+      /* Permitimos scroll en ambos ejes para que el zoom no se revierta en Android */
+      overflow-y: auto; 
+      overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       display: flex;
       justify-content: center;
       padding: 30px 10px;
-      touch-action: pan-y pinch-zoom;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(212, 175, 55, 0.35) transparent;
+      /* Permitimos gestos de paneo en X y Y */
+      touch-action: pan-x pan-y pinch-zoom;
+      scrollbar-width: none; /* Ocultar barra de scroll en Firefox */
     }
-
-    #card-viewport::-webkit-scrollbar { width: 6px; }
-    #card-viewport::-webkit-scrollbar-track { background: transparent; }
-    #card-viewport::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.35); border-radius: 10px; }
+    
+    #card-viewport::-webkit-scrollbar { display: none; } /* Ocultar barra en Chrome/Safari */
 
     #zoom-card {
       position: absolute;
@@ -390,6 +393,7 @@
       box-shadow: 0 15px 50px rgba(0,0,0,0.65);
       transform-origin: center top;
       background: #fff;
+      flex-shrink: 0; /* Evita que el flexbox aplaste la imagen */
     }
 
     #zoom-card img { width: 100%; height: auto; display: block; pointer-events: none; }
@@ -425,14 +429,15 @@
     <div class="open-tag" id="open-btn">Toca para abrir</div>
   </div>
 
-  <div id="fullscreen-layer">
-    <button class="close-btn-ios" id="close-btn" aria-label="Cerrar invitación">
-      <svg viewBox="0 0 24 24">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
+  <!-- El botón X ahora está fuera de la capa de fullscreen para que nunca se mueva -->
+  <button class="close-btn-ios" id="close-btn" aria-label="Cerrar invitación">
+    <svg viewBox="0 0 24 24">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
 
+  <div id="fullscreen-layer">
     <div id="card-viewport">
       <div id="zoom-card">
         <img src="" alt="Invitación Pantalla Completa">
@@ -578,6 +583,7 @@
 
       envelope.classList.add('opened');
       openBtn.classList.add('is-opened-tag');
+      closeBtn.classList.add('visible'); // Mostrar la X fija
 
       playAudio(sndFlap);
       playAudio(sndMusic);
@@ -590,8 +596,10 @@
 
         const startRect = innerLetter.getBoundingClientRect();
         
-        // AQUI ESTÁ EL ZOOM INICIAL DEL 115% AL ENTRAR EN PANTALLA COMPLETA
-        const targetWidth = Math.min(window.innerWidth * 1.15, 700); 
+        // AUMENTAMOS EL ZOOM: 135% en PC, 125% en Celular
+        const isMobile = window.innerWidth < 768;
+        const zoomMultiplier = isMobile ? 1.25 : 1.35; 
+        const targetWidth = Math.min(window.innerWidth * zoomMultiplier, 900); 
         
         const ratio = startRect.width / startRect.height;
         const targetHeight = targetWidth / ratio;
@@ -637,6 +645,8 @@
       if (!isOpen || isTransitioning) return;
       isTransitioning = true;
       cancelAutoScroll();
+      
+      closeBtn.classList.remove('visible'); // Ocultar X
 
       playAudio(sndFlap);
       if (sndMusic) {
@@ -674,6 +684,7 @@
           isOpen = false;
           isTransitioning = false;
           cardViewport.scrollTop = 0;
+          cardViewport.scrollLeft = 0; // Reiniciar scroll en ambos ejes
           
           startIdleParticles();
         }, 750);
@@ -721,7 +732,14 @@
     cardViewport.addEventListener('touchend', (e) => {
       const deltaY = touchStartY - e.touches[0].clientY;
       const deltaX = Math.abs(touchStartX - e.touches[0].clientX);
-      if (deltaY > 80 && deltaY > deltaX) closeInvitation();
+      
+      // CORRECCIÓN DE CONFLICTO: 
+      // Solo cerramos si el usuario está HASTA ARRIBA de todo (scrollTop <= 0)
+      // Y hace un gesto muy agresivo hacia arriba (> 150px) y vertical.
+      // Esto evita que se cierre al intentar hacer scroll o zoom hacia abajo.
+      if (cardViewport.scrollTop <= 0 && deltaY > 150 && deltaY > deltaX * 2) {
+        closeInvitation();
+      }
     }, { passive: true });
   </script>
 </body>
