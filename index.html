@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- Viewport modificado para permitir zoom libre en dispositivos -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <!-- Viewport bloqueado para evitar zoom nativo global en todo el navegador -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
   <!-- ========== VISTA PREVIA WHATSAPP (Open Graph) ========== -->
   <meta property="og:title" content="Cecy & Felipe - Invitación de Boda">
@@ -44,6 +44,17 @@
       user-select: none;
       -webkit-tap-highlight-color: transparent;
       perspective: 1200px;
+    }
+
+    /* =========================================
+       0. CAPA AISLADA PARA PARTÍCULAS (Evita scroll/reflow)
+       ========================================= */
+    #fx-layer {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 4;
     }
 
     /* =========================================
@@ -287,7 +298,6 @@
     .particle-wind {
       position: fixed;
       pointer-events: none;
-      z-index: 4;
       border-radius: 50%;
       opacity: 0;
       will-change: transform, opacity;
@@ -303,7 +313,6 @@
     .particle-idle {
       position: fixed;
       pointer-events: none;
-      z-index: 4;
       border-radius: 50%;
       background-color: #ffe17d;
       box-shadow: 0 0 12px 2px rgba(255, 225, 125, 0.8);
@@ -410,6 +419,9 @@
 </head>
 <body>
 
+  <!-- Capa aislada para partículas (soluciona el parpadeo y cambio de tamaño en Android) -->
+  <div id="fx-layer"></div>
+
   <audio id="snd-flap" src="sobre.mp3" preload="metadata"></audio>
   <audio id="snd-music" src="musica.mp3" preload="metadata"></audio>
   <audio id="snd-ambiente" src="viento_ambiente.mp3" preload="metadata"></audio>
@@ -462,6 +474,7 @@
     const cardViewport = document.getElementById('card-viewport');
     const zoomCard = document.getElementById('zoom-card');
     const zoomCardImg = zoomCard.querySelector('img');
+    const fxLayer = document.getElementById('fx-layer');
 
     const sndFlap = document.getElementById('snd-flap');
     const sndMusic = document.getElementById('snd-music');
@@ -527,7 +540,7 @@
         p.style.setProperty('--y-offset', `${yOffset}px`);
         p.style.animationDuration = `${duration}s`;
         
-        document.body.appendChild(p);
+        fxLayer.appendChild(p);
         activeParticles.push(p);
         
         setTimeout(() => {
@@ -576,7 +589,7 @@
         particle.style.setProperty('--rot', `${rotation}deg`);
         particle.style.animationDuration = `${duration}s`;
         
-        document.body.appendChild(particle);
+        fxLayer.appendChild(particle);
         
         setTimeout(() => { particle.remove(); }, duration * 1000);
       }
@@ -696,7 +709,6 @@
       const currentRect = zoomCard.getBoundingClientRect();
       const targetRect = savedTargetRect || innerLetter.getBoundingClientRect();
 
-      // Fijamos la posición y tamaño actual visual para evitar saltos
       zoomCard.style.position = 'fixed';
       zoomCard.style.top = `${currentRect.top}px`;
       zoomCard.style.left = `${currentRect.left}px`;
@@ -708,7 +720,6 @@
 
       zoomCard.getBoundingClientRect(); // Forzar reflow
 
-      // Transición fluida de vuelta al sobre reseteando la escala a 1
       zoomCard.style.transition = 'all 0.75s cubic-bezier(0.4, 0, 0.2, 1)';
       zoomCard.style.transform = 'scale(1)';
       zoomCard.style.top = `${targetRect.top}px`;
@@ -741,7 +752,7 @@
     }
 
     // =========================================
-    // 1. CONTROL DE ZOOM CON RUEDA DEL RATÓN (PC) - Solo cuando está abierto
+    // 1. CONTROL DE ZOOM CON RUEDA DEL RATÓN (PC) - Estrictamente con carta abierta
     // =========================================
     cardViewport.addEventListener('wheel', (e) => {
       if (!isOpen || isTransitioning) return;
@@ -761,7 +772,7 @@
     }, { passive: false });
 
     // =========================================
-    // 2. CONTROL DE ARRASTRE CON RATÓN (PC) - Solo cuando está abierto
+    // 2. CONTROL DE ARRASTRE CON RATÓN (PC) - Estrictamente con carta abierta
     // =========================================
     let isDragging = false;
     let startX, startY, scrollLeft, scrollTop;
@@ -790,7 +801,7 @@
     });
 
     // =========================================
-    // 3. CONTROL DE PINCH-TO-ZOOM TÁCTIL (MÓVIL) - Solo cuando está abierto
+    // 3. CONTROL DE PINCH-TO-ZOOM TÁCTIL (MÓVIL) - Estrictamente con carta abierta
     // =========================================
     let initialPinchDistance = null;
     let initialScale = 1;
