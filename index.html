@@ -219,7 +219,7 @@
     }
 
     /* =========================================
-       4. SELLO PERSONALIZADO (REDUCIDO 10%)
+       4. SELLO PERSONALIZADO (REDUCIDO 45%)
        ========================================= */
     .wax-seal {
       position: absolute;
@@ -227,8 +227,8 @@
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 6;
-      width: 76px; /* Antes 85px */
-      height: 76px; /* Antes 85px */
+      width: 42px; /* 76px - 45% = ~42px */
+      height: 42px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -312,7 +312,7 @@
     }
 
     /* =========================================
-       6. CAPA FULLSCREEN Y BOTÓN X FIJO
+       6. CAPA FULLSCREEN
        ========================================= */
     #fullscreen-layer {
       position: fixed;
@@ -334,7 +334,6 @@
       background: rgba(10, 7, 5, 0.94);
     }
 
-    /* BOTÓN X TOTALMENTE INDEPENDIENTE Y FIJO */
     .close-btn-ios {
       position: fixed;
       top: max(20px, env(safe-area-inset-top) + 15px);
@@ -351,7 +350,7 @@
       cursor: pointer;
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      z-index: 99999; /* Por encima de todo */
+      z-index: 99999; 
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
       opacity: 0;
       pointer-events: none;
@@ -359,12 +358,7 @@
       transition: opacity 0.35s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s;
     }
 
-    .close-btn-ios.visible { 
-      opacity: 1; 
-      pointer-events: auto; 
-      transform: scale(1); 
-    }
-    
+    .close-btn-ios.visible { opacity: 1; pointer-events: auto; transform: scale(1); }
     .close-btn-ios:hover { background: rgba(65, 48, 32, 0.88); transform: scale(1.08); }
     .close-btn-ios:active { transform: scale(0.92); }
     .close-btn-ios svg { width: 18px; height: 18px; stroke: #f7e7c4; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -372,19 +366,17 @@
     #card-viewport {
       width: 100%;
       height: 100%;
-      /* Permitimos scroll en ambos ejes para que el zoom no se revierta en Android */
       overflow-y: auto; 
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      display: flex;
-      justify-content: center;
+      /* Cambiado a block para evitar que Flexbox cause el salto en Android */
+      display: block; 
       padding: 30px 10px;
-      /* Permitimos gestos de paneo en X y Y */
       touch-action: pan-x pan-y pinch-zoom;
-      scrollbar-width: none; /* Ocultar barra de scroll en Firefox */
+      scrollbar-width: none; 
     }
     
-    #card-viewport::-webkit-scrollbar { display: none; } /* Ocultar barra en Chrome/Safari */
+    #card-viewport::-webkit-scrollbar { display: none; }
 
     #zoom-card {
       position: absolute;
@@ -393,7 +385,8 @@
       box-shadow: 0 15px 50px rgba(0,0,0,0.65);
       transform-origin: center top;
       background: #fff;
-      flex-shrink: 0; /* Evita que el flexbox aplaste la imagen */
+      /* Añadido margen automático para centrar al terminar */
+      margin: 0 auto;
     }
 
     #zoom-card img { width: 100%; height: auto; display: block; pointer-events: none; }
@@ -429,7 +422,6 @@
     <div class="open-tag" id="open-btn">Toca para abrir</div>
   </div>
 
-  <!-- El botón X ahora está fuera de la capa de fullscreen para que nunca se mueva -->
   <button class="close-btn-ios" id="close-btn" aria-label="Cerrar invitación">
     <svg viewBox="0 0 24 24">
       <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -583,7 +575,7 @@
 
       envelope.classList.add('opened');
       openBtn.classList.add('is-opened-tag');
-      closeBtn.classList.add('visible'); // Mostrar la X fija
+      closeBtn.classList.add('visible');
 
       playAudio(sndFlap);
       playAudio(sndMusic);
@@ -596,10 +588,10 @@
 
         const startRect = innerLetter.getBoundingClientRect();
         
-        // AUMENTAMOS EL ZOOM: 135% en PC, 125% en Celular
+        // AUMENTO DE ZOOM: PC 175% y Celular 144%
         const isMobile = window.innerWidth < 768;
-        const zoomMultiplier = isMobile ? 1.25 : 1.35; 
-        const targetWidth = Math.min(window.innerWidth * zoomMultiplier, 900); 
+        const zoomMultiplier = isMobile ? 1.44 : 1.75; 
+        const targetWidth = Math.min(window.innerWidth * zoomMultiplier, 1100); 
         
         const ratio = startRect.width / startRect.height;
         const targetHeight = targetWidth / ratio;
@@ -632,10 +624,18 @@
           zoomCard.style.height = 'auto';
           zoomCard.style.transition = 'none';
 
+          // EL TRUCO PARA EVITAR EL SALTO: Ajustar scroll exacto al centro
+          if (targetWidth > cardViewport.clientWidth) {
+            cardViewport.scrollLeft = (targetWidth - cardViewport.clientWidth) / 2;
+          } else {
+            cardViewport.scrollLeft = 0;
+          }
+
           isOpen = true;
           isTransitioning = false;
 
-          startAutoScroll(15000);
+          // VELOCIDAD REDUCIDA 10%: 15000 * 1.1 = 16500
+          startAutoScroll(16500);
         }, 850);
 
       }, 2100);
@@ -646,7 +646,7 @@
       isTransitioning = true;
       cancelAutoScroll();
       
-      closeBtn.classList.remove('visible'); // Ocultar X
+      closeBtn.classList.remove('visible');
 
       playAudio(sndFlap);
       if (sndMusic) {
@@ -684,7 +684,7 @@
           isOpen = false;
           isTransitioning = false;
           cardViewport.scrollTop = 0;
-          cardViewport.scrollLeft = 0; // Reiniciar scroll en ambos ejes
+          cardViewport.scrollLeft = 0;
           
           startIdleParticles();
         }, 750);
@@ -733,10 +733,6 @@
       const deltaY = touchStartY - e.touches[0].clientY;
       const deltaX = Math.abs(touchStartX - e.touches[0].clientX);
       
-      // CORRECCIÓN DE CONFLICTO: 
-      // Solo cerramos si el usuario está HASTA ARRIBA de todo (scrollTop <= 0)
-      // Y hace un gesto muy agresivo hacia arriba (> 150px) y vertical.
-      // Esto evita que se cierre al intentar hacer scroll o zoom hacia abajo.
       if (cardViewport.scrollTop <= 0 && deltaY > 150 && deltaY > deltaX * 2) {
         closeInvitation();
       }
