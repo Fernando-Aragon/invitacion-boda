@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- Viewport modificado para permitir zoom out libre en Android -->
+  <!-- Viewport modificado para permitir zoom libre en dispositivos -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
   
   <!-- ========== VISTA PREVIA WHATSAPP (Open Graph) ========== -->
@@ -201,7 +201,6 @@
       overflow: hidden;
       box-shadow: 0 -2px 14px rgba(0,0,0,0.3);
       z-index: 2;
-      /* Retraso para que la carta se guarde antes de que la pestaña se cierre */
       transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s, z-index 0s 0.3s;
       pointer-events: none;
     }
@@ -283,7 +282,7 @@
     .envelope.opened ~ .open-tag, .is-opened-tag { opacity: 0 !important; pointer-events: none; transition: opacity 0.3s ease; }
 
     /* =========================================
-       5. PARTÍCULAS (MÁS BRILLANTES)
+       5. PARTÍCULAS
        ========================================= */
     .particle-wind {
       position: fixed;
@@ -394,7 +393,6 @@
       position: absolute;
       will-change: transform, width, height, top, left; 
       transform: translateZ(0); 
-      
       border-radius: 8px;
       box-shadow: 0 15px 50px rgba(0,0,0,0.65);
       transform-origin: center top;
@@ -470,6 +468,18 @@
     let autoScrollTimeoutId = null;
     let autoScrollCancelled = false;
     
+    // Configuración de zoom independiente
+    const ZOOM_CONFIG = {
+      mobileMultiplier: 1.37,   // Multiplicador inicial en celular
+      desktopMultiplier: 1.6,   // Multiplicador inicial en PC
+      minScale: 0.5,            // Límite para alejar (zoom out)
+      maxScale: 3.5             // Límite para acercar (zoom in)
+    };
+
+    let currentScale = 1;
+    let baseTargetWidth = 0;
+    let savedTargetRect = null;
+
     let idleParticlesInterval = null;
     let activeParticles = [];
 
@@ -532,7 +542,6 @@
     }
 
     function createWindParticles() {
-      // Colores más brillantes y saturados
       const colors = ['#ffd700', '#a2d149', '#fffacd', '#ffffff'];
       const numParticles = 80;
 
@@ -544,7 +553,6 @@
         particle.style.width = `${size}px`;
         particle.style.height = `${size}px`;
         particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        // Añadir un resplandor para que destaquen
         particle.style.boxShadow = `0 0 15px 2px ${colors[Math.floor(Math.random() * colors.length)]}`;
         
         particle.style.left = '50%';
@@ -586,6 +594,7 @@
     });
 
     function openInvitation() {
+      if (isOpen || isTransitioning) return;
       isTransitioning = true;
       
       zoomCardImg.src = 'invitacion.jpg'; 
@@ -603,16 +612,20 @@
       setTimeout(() => {
         stopIdleParticles();
 
-        const startRect = innerLetter.getBoundingClientRect();
+        // Guardamos la posición exacta de la carta mientras está en el sobre cerrado
+        savedTargetRect = innerLetter.getBoundingClientRect();
+        const startRect = savedTargetRect;
         
-        // Zoom reducido para celular (1.37)
         const isMobile = window.innerWidth < 768;
-        const zoomMultiplier = isMobile ? 1.37 : 1.75; 
-        const targetWidth = Math.min(window.innerWidth * zoomMultiplier, 1100); 
+        const zoomMultiplier = isMobile ? ZOOM_CONFIG.mobileMultiplier : ZOOM_CONFIG.desktopMultiplier;
         
+        baseTargetWidth = Math.min(window.innerWidth * zoomMultiplier, isMobile ? 900 : 1200);
+        currentScale = 1; 
+        zoomCard.style.transform = 'scale(1)';
+
         const ratio = startRect.width / startRect.height;
-        const targetHeight = targetWidth / ratio;
-        const targetLeft = (window.innerWidth - targetWidth) / 2;
+        const targetHeight = baseTargetWidth / ratio;
+        const targetLeft = (window.innerWidth - baseTargetWidth) / 2;
         const targetTop = 25; 
 
         zoomCard.style.transition = 'none';
@@ -630,20 +643,19 @@
         zoomCard.style.transition = 'all 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
         zoomCard.style.top = `${targetTop}px`;
         zoomCard.style.left = `${targetLeft}px`;
-        zoomCard.style.width = `${targetWidth}px`;
+        zoomCard.style.width = `${baseTargetWidth}px`;
         zoomCard.style.height = `${targetHeight}px`;
 
         setTimeout(() => {
           zoomCard.style.position = 'relative';
           zoomCard.style.top = '0';
           zoomCard.style.left = '0';
-          zoomCard.style.width = `${targetWidth}px`;
+          zoomCard.style.width = `${baseTargetWidth}px`;
           zoomCard.style.height = 'auto';
           zoomCard.style.transition = 'none';
 
-          // Centrado exacto al finalizar el zoom
-          if (targetWidth > cardViewport.clientWidth) {
-            cardViewport.scrollLeft = (targetWidth - cardViewport.clientWidth) / 2;
+          if (baseTargetWidth > cardViewport.clientWidth) {
+            cardViewport.scrollLeft = (baseTargetWidth - cardViewport.clientWidth) / 2;
           } else {
             cardViewport.scrollLeft = 0;
           }
@@ -651,10 +663,9 @@
           isOpen = true;
           isTransitioning = false;
 
-          // Autoscroll retrasado 3 segundos
           autoScrollTimeoutId = setTimeout(() => {
             if (!autoScrollCancelled) {
-              startAutoScroll(19800); // Velocidad reducida
+              startAutoScroll(19800);
             }
           }, 3000);
 
@@ -679,7 +690,7 @@
       }
 
       const currentRect = zoomCard.getBoundingClientRect();
-      const targetRect = innerLetter.getBoundingClientRect();
+      const targetRect = savedTargetRect || innerLetter.getBoundingClientRect();
 
       zoomCard.style.position = 'fixed';
       zoomCard.style.top = `${currentRect.top}px`;
@@ -691,44 +702,55 @@
 
       zoomCard.getBoundingClientRect();
 
+      // Transición fluida de cierre restableciendo la escala a 1 y volviendo al sobre
       zoomCard.style.transition = 'all 0.75s cubic-bezier(0.4, 0, 0.2, 1)';
+      zoomCard.style.transform = 'scale(1)';
       zoomCard.style.top = `${targetRect.top}px`;
       zoomCard.style.left = `${targetRect.left}px`;
       zoomCard.style.width = `${targetRect.width}px`;
       zoomCard.style.height = `${targetRect.height}px`;
 
-      // CORRECCIÓN DE CIERRE: 
-      // 1. Retrasamos la visibilidad de la carta interna (para que la clonada llegue primero)
-      // 2. Ocultamos el clon (display: none) justo después del movimiento
       setTimeout(() => {
-        // El clon ya llegó a su destino, lo ocultamos
         zoomCard.style.display = 'none';
-        
-        // Hacemos visible la carta interna original
         innerLetter.style.visibility = 'visible';
-        
-        // Quitamos los estilos en línea del clon para la próxima apertura
         zoomCard.removeAttribute('style');
         
-        // El sobre se cierra (la pestaña sube) DESPUÉS de que la carta ya está dentro
         setTimeout(() => {
           envelope.classList.remove('opened');
           openBtn.classList.remove('is-opened-tag');
 
-          // Restauramos el clon para la próxima vez
           setTimeout(() => {
-            zoomCard.style.display = 'block'; // Volver a mostrarlo
+            zoomCard.style.display = 'block';
             isOpen = false;
             isTransitioning = false;
             cardViewport.scrollTop = 0;
             cardViewport.scrollLeft = 0;
+            currentScale = 1;
             
             startIdleParticles();
           }, 750);
-        }, 300); // Pequeño retraso para que el sobre cierre después de que la carta esté "guardada"
+        }, 300);
 
-      }, 750); // Tiempo que tarda el clon en volver al sobre
+      }, 750);
     }
+
+    // Control de zoom con la rueda del ratón (Escritorio / Ctrl)
+    cardViewport.addEventListener('wheel', (e) => {
+      if (!isOpen) return;
+
+      if (e.ctrlKey || window.innerWidth >= 768) {
+        e.preventDefault();
+
+        const zoomIntensity = 0.1;
+        if (e.deltaY < 0) {
+          currentScale = Math.min(ZOOM_CONFIG.maxScale, currentScale + zoomIntensity);
+        } else {
+          currentScale = Math.max(ZOOM_CONFIG.minScale, currentScale - zoomIntensity);
+        }
+
+        zoomCard.style.transform = `scale(${currentScale})`;
+      }
+    }, { passive: false });
 
     function startAutoScroll(durationMs) {
       autoScrollCancelled = false;
@@ -756,7 +778,9 @@
     }
 
     ['touchstart', 'mousedown', 'wheel', 'pointerdown'].forEach(evt => {
-      cardViewport.addEventListener(evt, cancelAutoScroll, { passive: true });
+      cardViewport.addEventListener(evt, (e) => {
+        if (!e.ctrlKey) cancelAutoScroll();
+      }, { passive: true });
     });
 
     let touchStartY = 0;
@@ -768,8 +792,9 @@
     }, { passive: true });
 
     cardViewport.addEventListener('touchend', (e) => {
-      const deltaY = touchStartY - e.touches[0].clientY;
-      const deltaX = Math.abs(touchStartX - e.touches[0].clientX);
+      if (e.touches.length > 0) return;
+      const deltaY = touchStartY - (e.changedTouches ? e.changedTouches[0].clientY : 0);
+      const deltaX = Math.abs(touchStartX - (e.changedTouches ? e.changedTouches[0].clientX : 0));
       
       if (cardViewport.scrollTop <= 0 && deltaY > 150 && deltaY > deltaX * 2) {
         closeInvitation();
