@@ -382,11 +382,11 @@
       padding: 30px 10px;
       touch-action: pan-x pan-y pinch-zoom;
       scrollbar-width: none; 
-      cursor: grab; /* Indica que se puede arrastrar */
+      cursor: grab;
     }
     
     #card-viewport:active {
-      cursor: grabbing; /* Cursor al estar arrastrando */
+      cursor: grabbing;
     }
 
     #card-viewport::-webkit-scrollbar { display: none; }
@@ -473,10 +473,10 @@
     let autoScrollTimeoutId = null;
     let autoScrollCancelled = false;
     
-    // Configuración de zoom independiente
+    // Configuración de zoom (reducido un 20% respecto a los valores anteriores)
     const ZOOM_CONFIG = {
-      mobileMultiplier: 1.37,   // Zoom inicial en celular
-      desktopMultiplier: 1.6,   // Zoom inicial en PC
+      mobileMultiplier: 1.10,   // Reducido un 20% (antes 1.37)
+      desktopMultiplier: 1.28,  // Reducido un 20% (antes 1.6)
       minScale: 0.5,            // Permite alejar (zoom out)
       maxScale: 3.5             // Permite acercar (zoom in)
     };
@@ -791,20 +791,14 @@
     // =========================================
     let initialPinchDistance = null;
     let initialScale = 1;
-    let touchStartY = 0;
-    let touchStartX = 0;
 
     cardViewport.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
-        // Dos dedos: Iniciamos gesto de pinza (Zoom)
         initialPinchDistance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
         initialScale = currentScale;
-      } else if (e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
       }
     }, { passive: true });
 
@@ -824,14 +818,6 @@
     cardViewport.addEventListener('touchend', (e) => {
       if (e.touches.length < 2) {
         initialPinchDistance = null;
-      }
-      if (e.touches.length > 0) return;
-      
-      const deltaY = touchStartY - (e.changedTouches ? e.changedTouches[0].clientY : 0);
-      const deltaX = Math.abs(touchStartX - (e.changedTouches ? e.changedTouches[0].clientX : 0));
-      
-      if (cardViewport.scrollTop <= 0 && deltaY > 150 && deltaY > deltaX * 2) {
-        closeInvitation();
       }
     }, { passive: true });
 
