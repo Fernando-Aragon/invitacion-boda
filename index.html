@@ -382,8 +382,13 @@
       padding: 30px 10px;
       touch-action: pan-x pan-y pinch-zoom;
       scrollbar-width: none; 
+      cursor: grab; /* Indica que se puede arrastrar */
     }
     
+    #card-viewport:active {
+      cursor: grabbing; /* Cursor al estar arrastrando */
+    }
+
     #card-viewport::-webkit-scrollbar { display: none; }
 
     /* =========================================
@@ -470,10 +475,10 @@
     
     // Configuración de zoom independiente
     const ZOOM_CONFIG = {
-      mobileMultiplier: 1.37,   // Multiplicador inicial en celular
-      desktopMultiplier: 1.6,   // Multiplicador inicial en PC
-      minScale: 0.5,            // Límite para alejar (zoom out)
-      maxScale: 3.5             // Límite para acercar (zoom in)
+      mobileMultiplier: 1.37,   // Zoom inicial en celular
+      desktopMultiplier: 1.6,   // Zoom inicial en PC
+      minScale: 0.5,            // Permite alejar (zoom out)
+      maxScale: 3.5             // Permite acercar (zoom in)
     };
 
     let currentScale = 1;
@@ -612,7 +617,6 @@
       setTimeout(() => {
         stopIdleParticles();
 
-        // Guardamos la posición exacta de la carta mientras está en el sobre cerrado
         savedTargetRect = innerLetter.getBoundingClientRect();
         const startRect = savedTargetRect;
         
@@ -702,7 +706,6 @@
 
       zoomCard.getBoundingClientRect();
 
-      // Transición fluida de cierre restableciendo la escala a 1 y volviendo al sobre
       zoomCard.style.transition = 'all 0.75s cubic-bezier(0.4, 0, 0.2, 1)';
       zoomCard.style.transform = 'scale(1)';
       zoomCard.style.top = `${targetRect.top}px`;
@@ -734,7 +737,9 @@
       }, 750);
     }
 
-    // Control de zoom con la rueda del ratón (Escritorio / Ctrl)
+    // =========================================
+    // 1. CONTROL DE ZOOM CON RUEDA DEL RATÓN (PC)
+    // =========================================
     cardViewport.addEventListener('wheel', (e) => {
       if (!isOpen) return;
 
@@ -751,6 +756,84 @@
         zoomCard.style.transform = `scale(${currentScale})`;
       }
     }, { passive: false });
+
+    // =========================================
+    // 2. CONTROL DE ARRASTRE CON RATÓN (PC / MOUSE DRAG TO PAN)
+    // =========================================
+    let isDragging = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    cardViewport.addEventListener('mousedown', (e) => {
+      if (!isOpen) return;
+      isDragging = true;
+      startX = e.pageX - cardViewport.offsetLeft;
+      startY = e.pageY - cardViewport.offsetTop;
+      scrollLeft = cardViewport.scrollLeft;
+      scrollTop = cardViewport.scrollTop;
+    });
+
+    cardViewport.addEventListener('mouseleave', () => { isDragging = false; });
+    cardViewport.addEventListener('mouseup', () => { isDragging = false; });
+
+    cardViewport.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - cardViewport.offsetLeft;
+      const y = e.pageY - cardViewport.offsetTop;
+      const walkX = (x - startX);
+      const walkY = (y - startY);
+      cardViewport.scrollLeft = scrollLeft - walkX;
+      cardViewport.scrollTop = scrollTop - walkY;
+    });
+
+    // =========================================
+    // 3. CONTROL DE PINCH-TO-ZOOM TÁCTIL (MÓVIL / DOS DEDOS)
+    // =========================================
+    let initialPinchDistance = null;
+    let initialScale = 1;
+    let touchStartY = 0;
+    let touchStartX = 0;
+
+    cardViewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        // Dos dedos: Iniciamos gesto de pinza (Zoom)
+        initialPinchDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = currentScale;
+      } else if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+      }
+    }, { passive: true });
+
+    cardViewport.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && initialPinchDistance !== null) {
+        e.preventDefault();
+        const currentDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const scaleFactor = currentDistance / initialPinchDistance;
+        currentScale = Math.min(ZOOM_CONFIG.maxScale, Math.max(ZOOM_CONFIG.minScale, initialScale * scaleFactor));
+        zoomCard.style.transform = `scale(${currentScale})`;
+      }
+    }, { passive: false });
+
+    cardViewport.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) {
+        initialPinchDistance = null;
+      }
+      if (e.touches.length > 0) return;
+      
+      const deltaY = touchStartY - (e.changedTouches ? e.changedTouches[0].clientY : 0);
+      const deltaX = Math.abs(touchStartX - (e.changedTouches ? e.changedTouches[0].clientX : 0));
+      
+      if (cardViewport.scrollTop <= 0 && deltaY > 150 && deltaY > deltaX * 2) {
+        closeInvitation();
+      }
+    }, { passive: true });
 
     function startAutoScroll(durationMs) {
       autoScrollCancelled = false;
@@ -782,24 +865,6 @@
         if (!e.ctrlKey) cancelAutoScroll();
       }, { passive: true });
     });
-
-    let touchStartY = 0;
-    let touchStartX = 0;
-
-    cardViewport.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-    }, { passive: true });
-
-    cardViewport.addEventListener('touchend', (e) => {
-      if (e.touches.length > 0) return;
-      const deltaY = touchStartY - (e.changedTouches ? e.changedTouches[0].clientY : 0);
-      const deltaX = Math.abs(touchStartX - (e.changedTouches ? e.changedTouches[0].clientX : 0));
-      
-      if (cardViewport.scrollTop <= 0 && deltaY > 150 && deltaY > deltaX * 2) {
-        closeInvitation();
-      }
-    }, { passive: true });
   </script>
 </body>
 </html>
