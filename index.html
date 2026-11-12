@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover">
   <title>Invitación de Boda - Cecy & Felipe</title>
+  
+  <link rel="preload" as="image" href="fondo_celular.jpg" media="(max-width: 767px)">
+  <link rel="preload" as="image" href="fondo_escritorio.jpg" media="(min-width: 768px)">
+  
   <style>
     :root {
       --olive-body: #617d26;
@@ -20,7 +24,7 @@
     }
 
     body {
-      background-color: #0d0a08;
+      background-color: #1a1614;
       font-family: 'Playfair Display', Georgia, serif;
       height: 100vh;
       height: 100dvh;
@@ -44,6 +48,13 @@
       background: url('fondo_celular.jpg') center center / cover no-repeat;
       filter: brightness(0.92) contrast(1.05);
       z-index: 1;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      transform: translateZ(0);
+    }
+
+    .ready .bg-cinematic {
+      opacity: 1;
       animation: cameraGlide 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
@@ -75,18 +86,22 @@
       align-items: center;
       justify-content: center;
       transform-style: preserve-3d;
+      opacity: 0;
+      transform: translateZ(0);
+    }
+
+    .ready .envelope-stage {
       animation: dramaticEntry 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      transition: transform 0.3s ease;
     }
 
     @media (max-width: 360px) {
-      .envelope-stage { transform: scale(0.86); }
+      .ready .envelope-stage { transform: scale(0.86); }
     }
 
     @keyframes dramaticEntry {
       0% { transform: translateY(150px) translateZ(-800px) rotateY(-720deg) scale(0.3); opacity: 0; filter: blur(10px); }
       60% { transform: translateY(-10px) translateZ(50px) rotateY(0deg) scale(1.05); opacity: 1; filter: blur(0); }
-      100% { transform: translateY(0) translateZ(0) rotateY(0deg) scale(1); }
+      100% { transform: translateY(0) translateZ(0) rotateY(0deg) scale(1); opacity: 1; }
     }
 
     .scene {
@@ -204,7 +219,7 @@
     }
 
     /* =========================================
-       4. SELLO PERSONALIZADO
+       4. SELLO PERSONALIZADO (SIN SOMBRA Y CON ZOOM)
        ========================================= */
     .wax-seal {
       position: absolute;
@@ -218,8 +233,9 @@
       justify-content: center;
       align-items: center;
       pointer-events: none;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6));
+      /* Mantenemos la transición suave para el nuevo efecto */
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform-style: preserve-3d;
     }
 
     .wax-seal img {
@@ -229,8 +245,9 @@
     }
 
     .envelope.opened .wax-seal {
+      /* En lugar de hacerse pequeño, ahora crece y salta hacia el usuario */
       opacity: 0 !important;
-      transform: translate(-50%, -50%) scale(0.5);
+      transform: translate(-50%, -50%) scale(1.8) translateZ(80px);
     }
 
     .open-tag {
@@ -254,12 +271,7 @@
     }
 
     .open-tag:hover { background: rgba(32, 22, 14, 0.95); border-color: #ffd966; }
-    
-    .intro-done .open-tag { 
-      opacity: 1; 
-      transform: translateY(0); 
-    }
-
+    .intro-done .open-tag { opacity: 1; transform: translateY(0); }
     .envelope.opened ~ .open-tag, .is-opened-tag { opacity: 0 !important; pointer-events: none; transition: opacity 0.3s ease; }
 
     /* =========================================
@@ -272,12 +284,13 @@
       border-radius: 50%;
       opacity: 0;
       will-change: transform, opacity;
+      transform: translateZ(0);
       animation: windBlow linear forwards;
     }
 
     @keyframes windBlow {
-      0% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
-      100% { opacity: 0; transform: translate(var(--dest-x), var(--dest-y)) scale(0.2) rotate(var(--rot)); }
+      0% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+      100% { opacity: 0; transform: translate3d(var(--dest-x), var(--dest-y), 0) scale(0.2) rotate(var(--rot)); }
     }
 
     .particle-idle {
@@ -289,14 +302,15 @@
       box-shadow: 0 0 12px 2px rgba(255, 225, 125, 0.8);
       opacity: 0;
       will-change: transform, opacity;
+      transform: translateZ(0);
       animation: windCross linear forwards;
     }
 
     @keyframes windCross {
-      0% { transform: translateX(0) translateY(0) scale(0.5); opacity: 0; }
+      0% { transform: translate3d(0, 0, 0) scale(0.5); opacity: 0; }
       10% { opacity: 1; }
       90% { opacity: 1; }
-      100% { transform: translateX(-120vw) translateY(var(--y-offset)) scale(1.2); opacity: 0; }
+      100% { transform: translate3d(-120vw, var(--y-offset), 0) scale(1.2); opacity: 0; }
     }
 
     /* =========================================
@@ -383,9 +397,9 @@
 </head>
 <body>
 
-  <audio id="snd-flap" src="sobre.mp3" preload="auto"></audio>
-  <audio id="snd-music" src="musica.mp3" preload="auto"></audio>
-  <audio id="snd-ambiente" src="viento_ambiente.mp3" preload="auto"></audio>
+  <audio id="snd-flap" src="sobre.mp3" preload="metadata"></audio>
+  <audio id="snd-music" src="musica.mp3" preload="metadata"></audio>
+  <audio id="snd-ambiente" src="viento_ambiente.mp3" preload="metadata"></audio>
 
   <div class="bg-cinematic"></div>
   <div class="bg-vignette"></div>
@@ -396,14 +410,14 @@
         <div class="envelope-back"></div>
         
         <div class="envelope-letter" id="inner-letter">
-          <img src="invitacion.png" alt="Invitación de Boda">
+          <img src="invitacion.jpg" alt="Invitación de Boda" decoding="async">
         </div>
 
         <div class="envelope-pocket"></div>
         <div class="envelope-flap"></div>
 
         <div class="wax-seal">
-          <img src="sello.png" alt="Sello de lacre">
+          <img src="sello.png" alt="Sello de lacre" decoding="async">
         </div>
       </div>
     </div>
@@ -421,7 +435,7 @@
 
     <div id="card-viewport">
       <div id="zoom-card">
-        <img src="invitacion.png" alt="Invitación Pantalla Completa">
+        <img src="" alt="Invitación Pantalla Completa">
       </div>
     </div>
   </div>
@@ -434,6 +448,7 @@
     const fsLayer = document.getElementById('fullscreen-layer');
     const cardViewport = document.getElementById('card-viewport');
     const zoomCard = document.getElementById('zoom-card');
+    const zoomCardImg = zoomCard.querySelector('img');
 
     const sndFlap = document.getElementById('snd-flap');
     const sndMusic = document.getElementById('snd-music');
@@ -447,13 +462,16 @@
     let idleParticlesInterval = null;
     let activeParticles = [];
 
-    // 1. EL BOTÓN APARECE MÁS RÁPIDO (2.5 segundos)
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.body.classList.add('ready');
+        startIdleParticles();
+      }, 100);
+    });
+
     setTimeout(() => {
       document.body.classList.add('intro-done');
-    }, 2500);
-
-    // 2. LAS PARTÍCULAS EMPIEZAN DESDE EL SEGUNDO CERO
-    startIdleParticles();
+    }, 2600);
 
     function playAudio(audio) {
       if (!audio) return;
@@ -465,7 +483,6 @@
       if (idleParticlesInterval) clearInterval(idleParticlesInterval);
       
       idleParticlesInterval = setInterval(() => {
-        // Solo frena si la carta ya está a pantalla completa o en transición final
         if (isOpen || isTransitioning) return;
 
         const p = document.createElement('div');
@@ -557,6 +574,8 @@
     function openInvitation() {
       isTransitioning = true;
       
+      zoomCardImg.src = 'invitacion.jpg'; 
+
       envelope.classList.add('opened');
       openBtn.classList.add('is-opened-tag');
 
@@ -564,15 +583,16 @@
       playAudio(sndMusic);
       if (sndAmbiente) playAudio(sndAmbiente); 
       
-      // La explosión de viento ocurre de inmediato
       createWindParticles(); 
 
       setTimeout(() => {
-        // 3. DETENEMOS LAS PARTÍCULAS AMBIENTALES JUSTO ANTES DEL ZOOM
         stopIdleParticles();
 
         const startRect = innerLetter.getBoundingClientRect();
-        const targetWidth = Math.min(window.innerWidth * 0.94, 500);
+        
+        // AQUI ESTÁ EL ZOOM INICIAL DEL 115% AL ENTRAR EN PANTALLA COMPLETA
+        const targetWidth = Math.min(window.innerWidth * 1.15, 700); 
+        
         const ratio = startRect.width / startRect.height;
         const targetHeight = targetWidth / ratio;
         const targetLeft = (window.innerWidth - targetWidth) / 2;
@@ -655,7 +675,6 @@
           isTransitioning = false;
           cardViewport.scrollTop = 0;
           
-          // Volvemos a activar el viento cruzado
           startIdleParticles();
         }, 750);
 
