@@ -473,12 +473,12 @@
     let autoScrollTimeoutId = null;
     let autoScrollCancelled = false;
     
-    // Configuración de zoom (reducido un 20% respecto a los valores anteriores)
+    // Configuración de zoom (con el 20% menos de zoom inicial aplicado)
     const ZOOM_CONFIG = {
-      mobileMultiplier: 1.10,   // Reducido un 20% (antes 1.37)
-      desktopMultiplier: 1.28,  // Reducido un 20% (antes 1.6)
-      minScale: 0.5,            // Permite alejar (zoom out)
-      maxScale: 3.5             // Permite acercar (zoom in)
+      mobileMultiplier: 1.10,   
+      desktopMultiplier: 1.28,  
+      minScale: 0.5,            
+      maxScale: 3.5             
     };
 
     let currentScale = 1;
@@ -696,16 +696,19 @@
       const currentRect = zoomCard.getBoundingClientRect();
       const targetRect = savedTargetRect || innerLetter.getBoundingClientRect();
 
+      // Fijamos la posición y tamaño actual visual para evitar saltos
       zoomCard.style.position = 'fixed';
       zoomCard.style.top = `${currentRect.top}px`;
       zoomCard.style.left = `${currentRect.left}px`;
-      zoomCard.style.width = `${currentRect.width}px`;
-      zoomCard.style.height = `${currentRect.height}px`;
+      zoomCard.style.width = `${baseTargetWidth}px`;
+      zoomCard.style.height = `${zoomCard.offsetHeight}px`;
+      zoomCard.style.transform = `scale(${currentScale})`;
 
       fsLayer.classList.remove('active');
 
-      zoomCard.getBoundingClientRect();
+      zoomCard.getBoundingClientRect(); // Forzar reflow
 
+      // Transición fluida de vuelta al sobre reseteando la escala a 1
       zoomCard.style.transition = 'all 0.75s cubic-bezier(0.4, 0, 0.2, 1)';
       zoomCard.style.transform = 'scale(1)';
       zoomCard.style.top = `${targetRect.top}px`;
@@ -738,10 +741,10 @@
     }
 
     // =========================================
-    // 1. CONTROL DE ZOOM CON RUEDA DEL RATÓN (PC)
+    // 1. CONTROL DE ZOOM CON RUEDA DEL RATÓN (PC) - Solo cuando está abierto
     // =========================================
     cardViewport.addEventListener('wheel', (e) => {
-      if (!isOpen) return;
+      if (!isOpen || isTransitioning) return;
 
       if (e.ctrlKey || window.innerWidth >= 768) {
         e.preventDefault();
@@ -758,13 +761,13 @@
     }, { passive: false });
 
     // =========================================
-    // 2. CONTROL DE ARRASTRE CON RATÓN (PC / MOUSE DRAG TO PAN)
+    // 2. CONTROL DE ARRASTRE CON RATÓN (PC) - Solo cuando está abierto
     // =========================================
     let isDragging = false;
     let startX, startY, scrollLeft, scrollTop;
 
     cardViewport.addEventListener('mousedown', (e) => {
-      if (!isOpen) return;
+      if (!isOpen || isTransitioning) return;
       isDragging = true;
       startX = e.pageX - cardViewport.offsetLeft;
       startY = e.pageY - cardViewport.offsetTop;
@@ -776,7 +779,7 @@
     cardViewport.addEventListener('mouseup', () => { isDragging = false; });
 
     cardViewport.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
+      if (!isOpen || isTransitioning || !isDragging) return;
       e.preventDefault();
       const x = e.pageX - cardViewport.offsetLeft;
       const y = e.pageY - cardViewport.offsetTop;
@@ -787,12 +790,13 @@
     });
 
     // =========================================
-    // 3. CONTROL DE PINCH-TO-ZOOM TÁCTIL (MÓVIL / DOS DEDOS)
+    // 3. CONTROL DE PINCH-TO-ZOOM TÁCTIL (MÓVIL) - Solo cuando está abierto
     // =========================================
     let initialPinchDistance = null;
     let initialScale = 1;
 
     cardViewport.addEventListener('touchstart', (e) => {
+      if (!isOpen || isTransitioning) return;
       if (e.touches.length === 2) {
         initialPinchDistance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
@@ -803,6 +807,7 @@
     }, { passive: true });
 
     cardViewport.addEventListener('touchmove', (e) => {
+      if (!isOpen || isTransitioning) return;
       if (e.touches.length === 2 && initialPinchDistance !== null) {
         e.preventDefault();
         const currentDistance = Math.hypot(
